@@ -45,64 +45,41 @@ def get_drinks_details(payload):
 @requires_auth("post:drinks")
 def create_drink(payload):
     body = request.get_json()
-    title = body.get("title", None)
-    recipe = body.get("recipe", None)
+    try:
+        drink = Drink()
+        drink.title = body['title']
+        drink.recipe = json.dumps(body['recipe'])
+        drink.insert()
 
-    if not title or not recipe:
+        return jsonify({
+            'success': True,
+            'drinks': [drink.long()]
+        }), 200
+
+    except:
         abort(400)
-
-    for item in recipe:
-        color = item.get("color", None)
-        parts = item.get("parts", None)
-        name = item.get("name", None)
-        if not color or not parts or not name:
-            abort(400)
-
-    drink = Drink.query.filter_by(title=title).first()
-    if drink:
-        abort(409)
-
-    drink = Drink(title=title, recipe=json.dumps(recipe))
-    drink.insert()
-
-    return jsonify({"success": True, "drinks": [drink.long()]})
 
 
 @app.route("/drinks/<id>", methods=["PATCH"])
 @requires_auth("patch:drinks")
 def update_drink(payload, id):
-    drink = Drink.query.get(id)
+    body = request.get_json()
 
+    drink = Drink.query.filter(Drink.id == id).one_or_none()
     if not drink:
         abort(404)
 
-    body = request.get_json()
-    title = body.get("title", None)
-    recipe = body.get("recipe", None)
-
-    if title:
-        drink.title = title
-
-    if recipe:
-        for item in recipe:
-            color = item.get("color", None)
-            parts = item.get("parts", None)
-            name = item.get("name", None)
-            if not color or not parts or not name:
-                abort(400)
-
-        drink.recipe = json.dumps(recipe)
-
     try:
+        drink.title = body['title']
+        drink.recipe = body['recipe']
         drink.update()
-    except:
-        db.session.rollback()
-        abort(500)
 
-    return jsonify({
-        "success": True,
-        "drinks": [drink.long()]
-    })
+        return jsonify({
+            'success': True,
+            'drinks': [drink.long()]
+        })
+    except:
+        abort(422)
 
 
 @app.route("/drinks/<id>", methods=["DELETE"])
