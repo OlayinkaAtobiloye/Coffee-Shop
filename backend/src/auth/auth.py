@@ -137,10 +137,16 @@ def requires_auth(permission=''):
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            token = get_token_from_auth_header()
-            payload = verify_and_decode_jwt(token)
-            check_permissions(permission, payload)
-            return f(payload, *args, **kwargs)
+            try:
+                token = get_token_from_auth_header()
+                payload = verify_and_decode_jwt(token)
+                check_permissions(permission, payload)
+                return f(payload, *args, **kwargs)
+            except AuthError as e:
+                raise AuthError({
+                    "code": "invalid_header",
+                    "description": "Unable to find the appropriate key."
+                }, 400)
         return wrapper
     return requires_auth_decorator
 
