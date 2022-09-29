@@ -162,6 +162,15 @@ def internal_server_error(error):
     }), 500
 
 
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    """
+    Receive the raised authorization error and propagates it as response
+    """
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
 if __name__ == "__main__":
     app.debug = True
     app.run()
